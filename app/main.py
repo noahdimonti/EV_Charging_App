@@ -16,18 +16,16 @@ def root():
     return {"message": "Hello EV Charging World"}
 
 
-@app.get("/users")
+@app.get("/users", response_model=List[schema.UserOut])
 def get_all_users(db: Session = Depends(get_db)):
     users = db.query(models.User).all()
     return users
 
 
-@app.post("/users", response_model=schema.UserOut)
-def get_user(user: schema.UserBase, db: Session = Depends(get_db)):
-    return db.query(models.User).filter(
-        models.User.email == user.email 
-        and models.User.password == user.password
-        ).first()
+@app.get("/users/{id}", response_model=schema.UserOut)
+def get_user(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()
+    return user
 
 
 @app.post("/users", response_model=schema.UserOut)
@@ -39,11 +37,11 @@ def create_user(user: schema.UserCreate, db: Session = Depends(get_db)):
                             detail=f'User with email {user.email} already exists.')
     
     # Hash the password
-    # hashed_password = utils.hash(user.password)
-    # user.password = hashed_password
+    hashed_password = utils.hash(user.password)
+    user.password = hashed_password
 
     new_user = models.User(
-        **user.model_dump()
+        **(user.model_dump())
     )
 
     db.add(new_user)
